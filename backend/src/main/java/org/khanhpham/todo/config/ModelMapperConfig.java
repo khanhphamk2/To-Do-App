@@ -21,7 +21,6 @@ public class ModelMapperConfig {
             protected void configure() {
                 map().setCreatedBy(String.valueOf(source.getCreatedBy()));
                 map().setCreatedDate(String.valueOf(source.getCreatedDate()));
-                map().setUpdatedBy(String.valueOf(source.getUpdatedBy()));
                 map().setUpdatedDate(String.valueOf(source.getUpdatedDate()));
             }
         });

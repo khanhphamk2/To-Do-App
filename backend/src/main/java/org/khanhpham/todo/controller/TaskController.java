@@ -38,7 +38,7 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getAllCompletedTasks(pageNumber, pageSize, sortBy, sortDir));
     }
 
-    @GetMapping("/incomplete")
+    @GetMapping("/incompleted")
     public ResponseEntity<PaginationResponse<TaskDTO>> getIncompleteTasks(
             @RequestParam(value = "page", defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int pageNumber,
             @RequestParam(value = "limit", defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int pageSize,
@@ -68,5 +68,10 @@ public class TaskController {
     public ResponseEntity<Void> deleteTask(@PathVariable(value = "id") Long id) {
         taskService.deleteTask(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{id}/complete")
+    public ResponseEntity<TaskDTO> completeTask(@PathVariable(value = "id") Long id) {
+        return ResponseEntity.ok(taskService.completeTask(id));
     }
 }

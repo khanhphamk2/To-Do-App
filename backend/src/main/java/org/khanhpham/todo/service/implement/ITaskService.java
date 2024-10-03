@@ -61,6 +61,9 @@ public class ITaskService implements TaskService {
     @Override
     public TaskDTO createTask(TaskRequest taskRequest) {
         Task task = convertToEntity(taskRequest);
+        task.setCreatedBy("User");
+        task.setCreatedDate(java.time.LocalDateTime.now());
+        task.setUpdatedDate(java.time.LocalDateTime.now());
         Task newTask = taskRepository.save(task);
         return convertToDto(newTask);
     }

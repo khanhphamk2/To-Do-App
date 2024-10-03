@@ -20,8 +20,6 @@ import java.time.LocalDateTime;
 public abstract class AudiEntity {
     @Column(name = "created_by")
     private String createdBy;
-    @Column(name = "updated_by")
-    private String updatedBy;
     @Column(name = "created_date")
     private LocalDateTime createdDate;
     @Column(name = "updated_date")
