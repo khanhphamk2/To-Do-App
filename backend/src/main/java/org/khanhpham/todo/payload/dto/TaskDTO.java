@@ -3,6 +3,9 @@ package org.khanhpham.todo.payload.dto;
 import lombok.*;
 import org.khanhpham.todo.entity.Task;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+
 /**
  * DTO for {@link Task}
  */
@@ -14,7 +17,11 @@ import org.khanhpham.todo.entity.Task;
 @Setter
 public class TaskDTO extends AudiDTO{
     Long id;
-    String task;
+    String title;
     String description;
-    boolean completed;
+    LocalDate date;
+    LocalTime time;
+    boolean isCompleted;
+    boolean isImportant;
+    Long userId;
 }

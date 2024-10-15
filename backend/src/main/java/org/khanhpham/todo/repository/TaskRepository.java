@@ -1,13 +1,13 @@
 package org.khanhpham.todo.repository;
 
 import org.khanhpham.todo.entity.Task;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
 public interface TaskRepository extends JpaRepository<Task, Long> {
-    public Page<Task> findByCompletedTrue(Pageable pageable);
-    public Page<Task> findByCompletedFalse(Pageable pageable);
+    List<Task> findTaskByUserId(Long userId);
+    Task findByUserIdAndId(Long userId, Long taskId);
+    List<Task> findByUserIdAndIsCompleted(Long userId, boolean isCompleted);
+    List<Task> findByUserIdAndIsImportant(Long userId, boolean isImportant);
 }

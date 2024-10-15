@@ -1,13 +1,15 @@
 package org.khanhpham.todo.controller;
 
 import jakarta.validation.Valid;
+import org.khanhpham.todo.entity.CustomUserDetails;
 import org.khanhpham.todo.payload.dto.TaskDTO;
 import org.khanhpham.todo.payload.request.TaskRequest;
-import org.khanhpham.todo.payload.response.PaginationResponse;
 import org.khanhpham.todo.service.TaskService;
-import org.khanhpham.todo.utils.AppConstants;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("${spring.data.rest.base-path}/tasks")
@@ -19,43 +21,41 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<PaginationResponse<TaskDTO>> getAllTasks(
-            @RequestParam(value = "page", defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int pageNumber,
-            @RequestParam(value = "limit", defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int pageSize,
-            @RequestParam(value = "sortBy", defaultValue = AppConstants.DEFAULT_SORT_BY) String sortBy,
-            @RequestParam(value = "sortDir", defaultValue = AppConstants.DEFAULT_SORT_DIRECTION) String sortDir
-    ) {
-        return ResponseEntity.ok(taskService.getAllTasks(pageNumber, pageSize, sortBy, sortDir));
+    public ResponseEntity<List<TaskDTO>> getAllTasks(@AuthenticationPrincipal CustomUserDetails userDetails) {
+        Long userId = userDetails.getUserId();
+        return ResponseEntity.ok(taskService.getTasksByUserId(userId));
     }
 
-    @GetMapping("/completed")
-    public ResponseEntity<PaginationResponse<TaskDTO>> getCompletedTasks(
-            @RequestParam(value = "page", defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int pageNumber,
-            @RequestParam(value = "limit", defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int pageSize,
-            @RequestParam(value = "sortBy", defaultValue = AppConstants.DEFAULT_SORT_BY) String sortBy,
-            @RequestParam(value = "sortDir", defaultValue = AppConstants.DEFAULT_SORT_DIRECTION) String sortDir
-    ) {
-        return ResponseEntity.ok(taskService.getAllCompletedTasks(pageNumber, pageSize, sortBy, sortDir));
+    @GetMapping(params = "isCompleted")
+    public ResponseEntity<List<TaskDTO>> getTasksByCompletionStatus(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(value = "isCompleted") boolean isCompleted) {
+        Long userId = userDetails.getUserId();
+        return ResponseEntity.ok(taskService.getTasksByCompletionStatus(userId, isCompleted));
     }
 
-    @GetMapping("/incompleted")
-    public ResponseEntity<PaginationResponse<TaskDTO>> getIncompleteTasks(
-            @RequestParam(value = "page", defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int pageNumber,
-            @RequestParam(value = "limit", defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int pageSize,
-            @RequestParam(value = "sortBy", defaultValue = AppConstants.DEFAULT_SORT_BY) String sortBy,
-            @RequestParam(value = "sortDir", defaultValue = AppConstants.DEFAULT_SORT_DIRECTION) String sortDir
-    ) {
-        return ResponseEntity.ok(taskService.getAllInCompleteTasks(pageNumber, pageSize, sortBy, sortDir));
+    @GetMapping(params = "isImportant")
+    public ResponseEntity<List<TaskDTO>> getTasksByImportance(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(value = "isImportant") boolean isImportant) {
+        Long userId = userDetails.getUserId();
+        return ResponseEntity.ok(taskService.getTasksByImportance(userId, isImportant));
     }
 
-    @PostMapping
-    public ResponseEntity<TaskDTO> createTask(@Valid @RequestBody TaskRequest taskRequest) {
-        return ResponseEntity.ok(taskService.createTask(taskRequest));
+
+    @PostMapping()
+    public ResponseEntity<TaskDTO> createTask(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                              @Valid @RequestBody TaskRequest taskRequest) {
+        Long userId = userDetails.getUserId();
+        return ResponseEntity.ok(taskService.createTask(userId, taskRequest));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TaskDTO> getTaskById(@PathVariable(value = "id") Long id) {
-        return ResponseEntity.ok(taskService.getTaskById(id));
+    public ResponseEntity<TaskDTO> getTaskByUserIdAndTaskId(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable(value = "id") Long id) {
+        Long userId = userDetails.getUserId();
+        return ResponseEntity.ok(taskService.getTaskByUserIdAndTaskId(userId, id));
     }
 
     @PutMapping("/{id}")
@@ -71,7 +71,26 @@ public class TaskController {
     }
 
     @PutMapping("/{id}/complete")
-    public ResponseEntity<TaskDTO> completeTask(@PathVariable(value = "id") Long id) {
-        return ResponseEntity.ok(taskService.completeTask(id));
+    public ResponseEntity<TaskDTO> completeTask(
+            @PathVariable(value = "id") Long id) {
+        return ResponseEntity.ok(taskService.updateTaskCompletionStatus(id, true));
+    }
+
+    @PutMapping("/{id}/important")
+    public ResponseEntity<TaskDTO> markTaskAsImportant(
+            @PathVariable(value = "id") Long id) {
+        return ResponseEntity.ok(taskService.updateTaskImportance(id, true));
+    }
+
+    @PutMapping("/{id}/unimportant")
+    public ResponseEntity<TaskDTO> markTaskAsUnimportant(
+            @PathVariable(value = "id") Long id) {
+        return ResponseEntity.ok(taskService.updateTaskImportance(id, false));
+    }
+
+    @PutMapping("/{id}/uncomplete")
+    public ResponseEntity<TaskDTO> markTaskAsIncomplete(
+            @PathVariable(value = "id") Long id) {
+        return ResponseEntity.ok(taskService.updateTaskCompletionStatus(id, false));
     }
 }

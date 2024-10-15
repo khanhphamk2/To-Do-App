@@ -19,7 +19,6 @@ public class ModelMapperConfig {
         modelMapper.addMappings(new PropertyMap<Task, TaskDTO>() {
             @Override
             protected void configure() {
-                map().setCreatedBy(String.valueOf(source.getCreatedBy()));
                 map().setCreatedDate(String.valueOf(source.getCreatedDate()));
                 map().setUpdatedDate(String.valueOf(source.getUpdatedDate()));
             }

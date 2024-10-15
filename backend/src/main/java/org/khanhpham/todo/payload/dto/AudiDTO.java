@@ -6,5 +6,4 @@ import lombok.Data;
 public abstract class AudiDTO {
     private String createdDate;
     private String updatedDate;
-    private String createdBy;
 }

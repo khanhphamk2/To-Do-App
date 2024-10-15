@@ -18,8 +18,6 @@ import java.time.LocalDateTime;
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 public abstract class AudiEntity {
-    @Column(name = "created_by")
-    private String createdBy;
     @Column(name = "created_date")
     private LocalDateTime createdDate;
     @Column(name = "updated_date")

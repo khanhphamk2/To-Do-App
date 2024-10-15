@@ -1,10 +1,10 @@
 package org.khanhpham.todo.entity;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -17,15 +17,25 @@ public class Task extends AudiEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "task", nullable = false)
-    private String task;
+    @Column(name = "title", nullable = false)
+    private String title;
 
     @Column(name = "description", nullable = false)
     private String description;
 
-    @Column(name = "deadline", nullable = false)
-    private LocalDateTime deadline;
+    @Column(name = "date", nullable = false)
+    private LocalDate date;
 
-    @Column(name = "completed")
-    private boolean completed = false;
+    @Column(name = "time", nullable = false)
+    private LocalTime time;
+
+    @Column(name = "isImportant")
+    private boolean isImportant = false;
+
+    @Column(name = "isCompleted")
+    private boolean isCompleted = false;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private User user;
 }
