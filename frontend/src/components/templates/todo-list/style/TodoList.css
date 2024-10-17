@@ -1,0 +1,14 @@
+.task-container {
+  transition: all 0.3s ease-in-out;
+  opacity: 1;
+}
+
+.task-container.fade-out {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.task-container.fade-in {
+  opacity: 1;
+  transform: translateY(0);
+}
