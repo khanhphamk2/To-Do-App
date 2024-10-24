@@ -26,7 +26,7 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getTasksByUserId(userId));
     }
 
-    @GetMapping(params = "isCompleted")
+    @GetMapping(params = "Completed")
     public ResponseEntity<List<TaskDTO>> getTasksByCompletionStatus(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(value = "isCompleted") boolean isCompleted) {
@@ -34,7 +34,7 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getTasksByCompletionStatus(userId, isCompleted));
     }
 
-    @GetMapping(params = "isImportant")
+    @GetMapping(params = "Important")
     public ResponseEntity<List<TaskDTO>> getTasksByImportance(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(value = "isImportant") boolean isImportant) {
@@ -72,25 +72,15 @@ public class TaskController {
 
     @PutMapping("/{id}/complete")
     public ResponseEntity<TaskDTO> completeTask(
-            @PathVariable(value = "id") Long id) {
-        return ResponseEntity.ok(taskService.updateTaskCompletionStatus(id, true));
+            @PathVariable(value = "id") Long id,
+            @RequestBody boolean isCompleted) {
+        return ResponseEntity.ok(taskService.updateTaskCompletionStatus(id, isCompleted));
     }
 
     @PutMapping("/{id}/important")
     public ResponseEntity<TaskDTO> markTaskAsImportant(
-            @PathVariable(value = "id") Long id) {
-        return ResponseEntity.ok(taskService.updateTaskImportance(id, true));
-    }
-
-    @PutMapping("/{id}/unimportant")
-    public ResponseEntity<TaskDTO> markTaskAsUnimportant(
-            @PathVariable(value = "id") Long id) {
-        return ResponseEntity.ok(taskService.updateTaskImportance(id, false));
-    }
-
-    @PutMapping("/{id}/uncomplete")
-    public ResponseEntity<TaskDTO> markTaskAsIncomplete(
-            @PathVariable(value = "id") Long id) {
-        return ResponseEntity.ok(taskService.updateTaskCompletionStatus(id, false));
+            @PathVariable(value = "id") Long id,
+            @RequestBody boolean isImportant) {
+        return ResponseEntity.ok(taskService.updateTaskImportance(id, isImportant));
     }
 }
