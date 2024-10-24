@@ -11,6 +11,11 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Authentication mode="login" />} />
         <Route path="/register" element={<Authentication mode="register" />} />
+        <Route path="/forgot-password" element={<Authentication mode="forgot-password" />} />
+        <Route path="/reset-password" element={<Authentication mode="reset-password" />} />
+        <Route path="/my-day" element={<Home />} />
+        <Route path="/important" element={<Home />} />
+        <Route path="/completed" element={<Home />} />
       </Routes>
     </AuthProvider>
   );

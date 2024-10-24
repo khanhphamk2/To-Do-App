@@ -1,14 +1,10 @@
-import { useState } from "react";
 import { Checkbox } from "@headlessui/react";
-import { StarIcon } from "@heroicons/react/24/outline";
-
-export default function StarCheckbox() {
-  const [enabled, setEnabled] = useState(false);
-
+import PropTypes from "prop-types";
+export default function StarCheckbox({ onToggle, enabled }) {
   return (
     <Checkbox
       checked={enabled}
-      onChange={() => setEnabled((prev) => !prev)}
+      onChange={onToggle}
       className={`relative flex items-center justify-center h-6 w-6 transition-colors`}
     >
       <svg
@@ -30,3 +26,8 @@ export default function StarCheckbox() {
     </Checkbox>
   );
 }
+
+StarCheckbox.propTypes = {
+  onToggle: PropTypes.func.isRequired,
+  enabled: PropTypes.bool.isRequired,
+};

@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import TimePicker from "../../controls/time-picker/TimePicker";
+import TimePicker from "../../controls/picker/TimePicker";
 import { MdDeleteForever, MdOutlineUpdate } from "react-icons/md";
-import DatePicker from "../../controls/date-picker/DatePicker";
+import DatePicker from "../../controls/picker/DatePicker";
+import { parseDate } from "../../../utils/formatDate";
 
 export default function TaskEdit({
   id,
@@ -12,12 +13,12 @@ export default function TaskEdit({
   date,
   onSave,
   onCancel,
-  onRemove,
+  deleteTask,
   addMode,
 }) {
   const [editTitle, setEditTitle] = useState(title);
   const [editDescription, setEditDescription] = useState(description);
-  const [editTime, setEditTime] = useState(time); 
+  const [editTime, setEditTime] = useState(time);
   const [editDate, setEditDate] = useState(date);
 
   const handleSave = () => {
@@ -28,6 +29,14 @@ export default function TaskEdit({
       date: editDate,
     });
   };
+
+  const handleRemove = (id) => {
+    deleteTask(id);
+  };
+
+  useEffect(() => {
+    console.log("time: ", editTime);
+  }, [editTime]);
 
   return (
     <div className="bg-[#FFFFFF] p-4 rounded-xl shadow-lg">
@@ -65,13 +74,13 @@ export default function TaskEdit({
         className="w-full mb-2 p-2 border rounded-lg"
       />
       <div className="flex gap-3">
-        <DatePicker setValue={setEditDate} value={editDate} />
+        <DatePicker setValue={setEditDate} value={parseDate(editDate)} />
         <TimePicker setValue={setEditTime} value={editTime} />
       </div>
       <div className="flex justify-end gap-2 mt-4">
         {!addMode && (
           <button
-            onClick={() => onRemove(id)}
+            onClick={() => deleteTask(id)}
             className="bg-red-500 hover:bg-red-700 text-white px-2 py-2 rounded-xl inline-flex items-center"
           >
             <MdDeleteForever className="size-6 mr-1" />
@@ -92,13 +101,13 @@ export default function TaskEdit({
 }
 
 TaskEdit.propTypes = {
-  id: PropTypes.string.isRequired,
+  id: PropTypes.number.isRequired,
   title: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
   time: PropTypes.string.isRequired,
   date: PropTypes.string.isRequired,
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
-  onRemove: PropTypes.func.isRequired,
+  deleteTask: PropTypes.func.isRequired,
   addMode: PropTypes.bool.isRequired,
 };

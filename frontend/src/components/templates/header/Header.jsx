@@ -22,8 +22,8 @@ export default function Header() {
   const auth = useAuth();
 
   const handleLogin = useCallback(() => {
-    if (auth.token) {
-      const user = JSON.parse(localStorage.getItem("user"));
+    if (auth.isAuthenticated()) {
+      const user = auth.getUser();
       setUsername(user.username);
       setIsLoggedIn(true);
     }
@@ -34,7 +34,7 @@ export default function Header() {
   }, [handleLogin]);
 
   const handleLogout = () => {
-    auth.handleLogout();
+    auth.logout();
     setUsername(null);
     setIsLoggedIn(false);
     window.location.href = "/";
@@ -47,6 +47,7 @@ export default function Header() {
       icon: MoonIcon,
       onClick: (e) => {
         e.preventDefault();
+        document.documentElement.classList.remove("dark"); // Xóa class dark khỏi thẻ <html>
         console.log("clicked");
       },
     },

@@ -1,14 +1,12 @@
 import { Checkbox } from "@headlessui/react";
 import { CheckIcon } from "@heroicons/react/16/solid";
-import { useState } from "react";
+import PropTypes from "prop-types";
 
-export default function RoundCheckbox() {
-  const [enabled, setEnabled] = useState(true);
-
+export default function RoundCheckbox({ onToggle, enabled }) {
   return (
     <Checkbox
       checked={enabled}
-      onChange={setEnabled}
+      onChange={onToggle}
       className={`relative flex items-center justify-center h-6 w-6 rounded-full ${
         enabled
           ? "bg-black hover:bg-gray-600 ring-white/10"
@@ -19,3 +17,8 @@ export default function RoundCheckbox() {
     </Checkbox>
   );
 }
+
+RoundCheckbox.propTypes = {
+  onToggle: PropTypes.func.isRequired,
+  enabled: PropTypes.bool.isRequired,
+};

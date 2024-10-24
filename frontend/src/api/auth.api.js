@@ -1,12 +1,9 @@
-import axios from 'axios';
-
-const baseUrl = 'http://localhost:8080/api/v1/auth';
+import httpRequest from '../config/httpRequest';
 
 export const login = async (data) => {
     try {
-        console.log('data:', data);
-        const response = await axios.post(`${baseUrl}/login`, data);
-        console.log('response:', response);
+        const response = await httpRequest.post('/auth/login', data);
+        console.log('response', response);
         return response;
     } catch (error) {
         console.error('Error logging in:', error.response || error.message);
@@ -16,21 +13,10 @@ export const login = async (data) => {
 
 export const register = async (data) => {
     try {
-        const response = await axios.post(`${baseUrl}/register`, data);
+        const response = await httpRequest.post(`/auth/register`, data);
         return response;
     } catch (error) {
         console.error('Error registering:', error);
         throw error;
     }
 }
-
-export const logout = async () => {
-    try {
-        const response = await axios.post(`${baseUrl}/logout`);
-        return response;
-    } catch (error) {
-        console.error('Error logging out:', error);
-        throw error;
-    }
-}
-

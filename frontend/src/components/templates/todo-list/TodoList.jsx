@@ -1,17 +1,34 @@
 import { useState, useEffect } from "react";
 import Task from "../task/Task";
 import TaskEdit from "../task/TaskEdit";
-import { TASKS } from "../../../mock";
+import { TASKS } from "../../../mock/index";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
+import { PlusIcon } from "@heroicons/react/24/outline";
+import { getAllTask } from "../../../api/task.api";
+import { useAuth } from "../../../context/AuthProvider.js";
 
 export default function TodoList() {
   const [tasks, setTasks] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newTask, setNewTask] = useState(null);
+  const auth = useAuth();
+
+  const getTasks = () => {
+    getAllTask()
+      .then((response) => {
+        setTasks(response);
+      })
+      .catch((error) => {
+        console.error("Error getting all tasks:", error);
+      });
+  };
 
   useEffect(() => {
+    // if (auth.isAuthenticated()) {
+    //   getTasks();
+    // }
     setTasks(TASKS);
-  }, []);
+  }, [auth]);
 
   const showEdit = (id) => {
     checkOtherShowEdit();
@@ -62,6 +79,31 @@ export default function TodoList() {
     setNewTask(null);
   };
 
+  const deleteTask = (id) => {
+    const updatedTasks = tasks.filter((task) => task.id !== id);
+    setTasks(updatedTasks);
+  };
+
+  const changeTaskComplete = (id) => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === id) {
+        task.completed = !task.completed;
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+  };
+
+  const changeTaskImportant = (id) => {
+    const updatedTasks = tasks.map((task) => {
+      if (task.id === id) {
+        task.important = !task.important;
+      }
+      return task;
+    });
+    setTasks(updatedTasks);
+  };
+
   const onDragEnd = (result) => {
     if (!result.destination) return;
 
@@ -86,20 +128,12 @@ export default function TodoList() {
                   className="flex items-center bg-blue-500 text-white py-2 px-4 rounded-xl transition-all duration-300 hover:bg-blue-600 transform shadow-lg mb-4"
                   onClick={addTask}
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    strokeWidth="1.5"
-                    stroke="currentColor"
+                  <PlusIcon
                     className="size-4"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 4.5v15m7.5-7.5h-15"
-                    />
-                  </svg>
+                    stroke="currentColor"
+                    fill="none"
+                    strokeWidth="2.5"
+                  />
                   <span className="ml-1">Add Task</span>
                 </button>
               </div>
@@ -142,6 +176,8 @@ export default function TodoList() {
                               description={task.description}
                               date={task.date}
                               time={task.time}
+                              completed={task.completed}
+                              important={task.important}
                               onEdit={showEdit}
                             />
                           )}

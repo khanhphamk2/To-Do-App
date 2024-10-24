@@ -1,10 +1,13 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../../context/AuthProvider";
+import { login } from "../../../../api/auth.api";
 
 export default function LoginForm() {
   const [identity, setIdentity] = useState("madison66@info.me");
   const [password, setPassword] = useState("admin@123");
   const auth = useAuth();
+  const navigate = useNavigate();
 
   const loginData = {
     identity: identity,
@@ -13,48 +16,52 @@ export default function LoginForm() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    try {
-      await auth.handleLogin(loginData);
-    } catch (error) {
-      console.error("Login Error:", error);
-    }
+    const response = await login(loginData);
+    auth.login(response);
+    navigate("/");
   };
 
   return (
     <div>
-      <div className="space-y-6 transition-all duration-500">
-        <label className="block">
-          <span className="text-base font-medium text-[#111418]">
-            Email or Username
-          </span>
-          <input
-            type="email"
-            placeholder="you@example.com"
-            className="w-full mt-2 h-12 px-4 py-2 border border-[#dce0e5] rounded-xl text-[#111418] focus:outline-none focus:border-[#1980e6]"
-            onChange={(e) => setIdentity(e.target.value)}
-            required
-          />
-        </label>
-        <label className="block">
-          <span className="text-base font-medium text-[#111418]">Password</span>
-          <input
-            type="password"
-            placeholder="Enter a password"
-            className="w-full mt-2 h-12 px-4 py-2 border border-[#dce0e5] rounded-xl text-[#111418] focus:outline-none focus:border-[#1980e6]"
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
-      </div>
+      <form onSubmit={handleLogin}>
+        <div className="space-y-6 transition-all duration-500">
+          <label className="block">
+            <span className="text-base font-medium text-[#111418]">
+              Email or Username
+            </span>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              className="w-full mt-2 h-12 px-4 py-2 border border-[#dce0e5] rounded-xl text-[#111418] focus:outline-none focus:border-[#1980e6]"
+              value={identity} // setting the default value for email/username
+              onChange={(e) => setIdentity(e.target.value)}
+              required
+            />
+          </label>
+          <label className="block">
+            <span className="text-base font-medium text-[#111418]">
+              Password
+            </span>
+            <input
+              type="password"
+              placeholder="Enter a password"
+              className="w-full mt-2 h-12 px-4 py-2 border border-[#dce0e5] rounded-xl text-[#111418] focus:outline-none focus:border-[#1980e6]"
+              value={password} // setting the default value for password
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </label>
+        </div>
 
-      <div className="mt-8">
-        <button
-          onClick={handleLogin}
-          className="w-full h-12 bg-[#1980e6] text-white font-bold rounded-xl transition-colors duration-300"
-        >
-          Login
-        </button>
-      </div>
+        <div className="mt-8">
+          <button
+            type="submit"
+            className="w-full h-12 bg-[#1980e6] text-white font-bold rounded-xl transition-colors duration-300"
+          >
+            Login
+          </button>
+        </div>
+      </form>
 
       <div className="mt-4 text-center text-sm text-[#637588]">
         Or login with
