@@ -13,7 +13,7 @@ export default function TaskEdit({
   date,
   onSave,
   onCancel,
-  deleteTask,
+  onRemove,
   addMode,
 }) {
   const [editTitle, setEditTitle] = useState(title);
@@ -30,13 +30,9 @@ export default function TaskEdit({
     });
   };
 
-  const handleRemove = (id) => {
-    deleteTask(id);
-  };
-
   useEffect(() => {
-    console.log("time: ", editTime);
-  }, [editTime]);
+    console.log("date: ", editDate);
+  }, [editDate]);
 
   return (
     <div className="bg-[#FFFFFF] p-4 rounded-xl shadow-lg">
@@ -80,7 +76,7 @@ export default function TaskEdit({
       <div className="flex justify-end gap-2 mt-4">
         {!addMode && (
           <button
-            onClick={() => deleteTask(id)}
+            onClick={() => onRemove(id)}
             className="bg-red-500 hover:bg-red-700 text-white px-2 py-2 rounded-xl inline-flex items-center"
           >
             <MdDeleteForever className="size-6 mr-1" />
@@ -94,7 +90,6 @@ export default function TaskEdit({
           <MdOutlineUpdate className="size-6 mr-1" />
           {addMode ? "Confirm" : "Update"}
         </button>
-        <div></div>
       </div>
     </div>
   );
@@ -108,6 +103,6 @@ TaskEdit.propTypes = {
   date: PropTypes.string.isRequired,
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
-  deleteTask: PropTypes.func.isRequired,
+  onRemove: PropTypes.func.isRequired,
   addMode: PropTypes.bool.isRequired,
 };

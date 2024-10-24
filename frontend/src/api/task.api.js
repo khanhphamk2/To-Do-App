@@ -2,8 +2,8 @@ import httpRequest from '../config/httpRequest';
 
 export const createTask = async (data) => {
     try {
-        const response = await httpRequest.post("/tasks/", data);
-        return response;
+        // const response = await httpRequest.post("/tasks/", data);
+        return data;
     } catch (error) {
         console.error('Error creating task:', error);
         throw error;

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import RoundCheckbox from "../../controls/checkbox/RoundCheckbox";
 import StarCheckbox from "../../controls/checkbox/StarCheckbox";
@@ -18,36 +18,30 @@ export default function Task({
   completed,
   important,
   onEdit,
+  onToggleComplete,
+  onToggleImportant,
 }) {
   const taskRef = useRef(null);
-  const [isImportant, setIsImportant] = useState(important);
-  const [isCompleted, setIsCompleted] = useState(completed);
 
   const taskAlert = () => {
     return timeDiffFromNow(time).diffSeconds < 0;
   };
 
-  const handleToggleComplete = (id) => {
-    setIsCompleted((prevCompleted) => {
-      const updatedCompleted = !prevCompleted;
-      console.log("Task ID:", id, "Completed:", updatedCompleted);
-      return updatedCompleted;
-      // Cập nhật giá trị completed của task tại đây nếu cần
-      // Ví dụ: gọi API để cập nhật dữ liệu trên server
-    });
-    changeTaskImportant(id);
-  };
+  const handleToggleComplete = useCallback(
+    (id) => {
+      onToggleComplete(id);
+      changeTaskCompleted(id);
+    },
+    [onToggleComplete]
+  );
 
-  const handleToggleImportant = (id) => {
-    setIsImportant((prevImportant) => {
-      const updatedImportant = !prevImportant;
-      console.log("Task ID:", id, "Important:", updatedImportant);
-      return updatedImportant;
-      // Cập nhật giá trị important của task tại đây nếu cần
-      // Ví dụ: gọi API để cập nhật dữ liệu trên server
-    });
-    changeTaskCompleted(id);
-  };
+  const handleToggleImportant = useCallback(
+    (id) => {
+      onToggleImportant(id);
+      changeTaskImportant(id);
+    },
+    [onToggleImportant]
+  );
 
   useEffect(() => {
     const taskElement = taskRef.current;
@@ -65,7 +59,7 @@ export default function Task({
       <div className="flex items-center gap-4">
         <RoundCheckbox
           onToggle={() => handleToggleComplete(id)}
-          enabled={isCompleted}
+          enabled={completed}
         />
         <div className="flex flex-col justify-center">
           <div className="flex gap-2">
@@ -94,7 +88,7 @@ export default function Task({
         <div className="shrink-0">
           <StarCheckbox
             onToggle={() => handleToggleImportant(id)}
-            enabled={isImportant}
+            enabled={important}
           />
         </div>
         <div className="cursor-pointer" onClick={() => onEdit(id)}>
@@ -135,4 +129,6 @@ Task.propTypes = {
   onEdit: PropTypes.func.isRequired,
   important: PropTypes.bool.isRequired,
   completed: PropTypes.bool.isRequired,
+  onToggleImportant: PropTypes.func.isRequired,
+  onToggleComplete: PropTypes.func.isRequired,
 };

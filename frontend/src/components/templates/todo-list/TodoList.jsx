@@ -4,8 +4,9 @@ import TaskEdit from "../task/TaskEdit";
 import { TASKS } from "../../../mock/index";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { PlusIcon } from "@heroicons/react/24/outline";
-import { getAllTask } from "../../../api/task.api";
+import { getAllTask, createTask } from "../../../api/task.api";
 import { useAuth } from "../../../context/AuthProvider.js";
+import formatDate from "../../../utils/formatDate.js";
 
 export default function TodoList() {
   const [tasks, setTasks] = useState([]);
@@ -13,21 +14,14 @@ export default function TodoList() {
   const [newTask, setNewTask] = useState(null);
   const auth = useAuth();
 
-  const getTasks = () => {
-    getAllTask()
-      .then((response) => {
-        setTasks(response);
-      })
-      .catch((error) => {
-        console.error("Error getting all tasks:", error);
-      });
-  };
-
+  // Fetch tasks from the server or mock data
   useEffect(() => {
-    // if (auth.isAuthenticated()) {
-    //   getTasks();
-    // }
-    setTasks(TASKS);
+    if (localStorage.getItem("tasks")) {
+      localStorage.setItem("tasks", JSON.stringify(TASKS));
+      setTasks(JSON.parse(localStorage.getItem("tasks")));
+    } else {
+      setTasks(TASKS);
+    }
   }, [auth]);
 
   const showEdit = (id) => {
@@ -48,71 +42,99 @@ export default function TodoList() {
     setIsAdding(false);
   };
 
-  const closeEdit = (id) => {
-    const task = tasks.find((task) => task.id === id);
-    task.editMode = false;
-    setTasks([...tasks]);
-  };
-
   const addTask = () => {
-    checkOtherShowEdit();
-    setIsAdding(true);
+    closeEdits();
     setNewTask({
       id: tasks.length + 1,
       title: "",
       description: "",
       date: new Date(),
       time: "00:00",
+      important: false,
+      completed: false,
       editMode: true,
     });
+    setIsAdding(true);
   };
 
   const saveTask = (taskData) => {
-    const taskToAdd = { ...newTask, ...taskData, editMode: false };
+    const taskToAdd = {
+      ...newTask,
+      ...taskData,
+      date: formatDate(newTask.date),
+      editMode: false,
+    };
     setTasks((prevTasks) => [...prevTasks, taskToAdd]);
+    TASKS.push(taskToAdd);
+    localStorage.setItem("tasks", JSON.stringify(TASKS));
+    createTask(taskToAdd).catch((error) =>
+      console.error("Error creating task:", error)
+    );
     setIsAdding(false);
     setNewTask(null);
   };
 
-  const cancelAddTask = () => {
+  const closeEdits = () => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => ({ ...task, editMode: false }))
+    );
     setIsAdding(false);
-    setNewTask(null);
   };
 
   const deleteTask = (id) => {
-    const updatedTasks = tasks.filter((task) => task.id !== id);
-    setTasks(updatedTasks);
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
   };
 
-  const changeTaskComplete = (id) => {
-    const updatedTasks = tasks.map((task) => {
-      if (task.id === id) {
-        task.completed = !task.completed;
-      }
-      return task;
-    });
-    setTasks(updatedTasks);
-  };
-
-  const changeTaskImportant = (id) => {
-    const updatedTasks = tasks.map((task) => {
-      if (task.id === id) {
-        task.important = !task.important;
-      }
-      return task;
-    });
-    setTasks(updatedTasks);
+  const toggleTaskField = (id, field) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.id === id ? { ...task, [field]: !task[field] } : task
+      )
+    );
   };
 
   const onDragEnd = (result) => {
     if (!result.destination) return;
 
-    const updatedTasks = [...tasks];
-    const [removed] = updatedTasks.splice(result.source.index, 1);
-    updatedTasks.splice(result.destination.index, 0, removed);
-
-    setTasks(updatedTasks);
+    const reorderedTasks = [...tasks];
+    const [movedTask] = reorderedTasks.splice(result.source.index, 1);
+    reorderedTasks.splice(result.destination.index, 0, movedTask);
+    setTasks(reorderedTasks);
   };
+
+  const renderTask = (task, provided) => (
+    <div
+      {...provided.dragHandleProps}
+      {...provided.draggableProps}
+      ref={provided.innerRef}
+    >
+      {task.editMode ? (
+        <TaskEdit
+          id={task.id}
+          title={task.title}
+          description={task.description}
+          date={task.date}
+          time={task.time}
+          onCancel={closeEdits}
+          onSave={saveTask}
+          onRemove={deleteTask}
+        />
+      ) : (
+        <Task
+          id={task.id}
+          title={task.title}
+          description={task.description}
+          date={task.date}
+          time={task.time}
+          completed={task.completed}
+          important={task.important}
+          onEdit={() => showEdit(task.id)}
+          onToggleComplete={() => toggleTaskField(task.id, "completed")}
+          onToggleImportant={() => toggleTaskField(task.id, "important")}
+        />
+      )}
+    </div>
+  );
 
   return (
     <div className="layout-content-container flex flex-col max-w-[960px] flex-1">
@@ -153,36 +175,7 @@ export default function TodoList() {
                       draggableId={task.id.toString()}
                       index={index}
                     >
-                      {(provided) => (
-                        <div
-                          {...provided.dragHandleProps}
-                          {...provided.draggableProps}
-                          ref={provided.innerRef}
-                        >
-                          {task.editMode ? (
-                            <TaskEdit
-                              id={task.id}
-                              title={task.title}
-                              description={task.description}
-                              date={task.date}
-                              time={task.time}
-                              onCancel={closeEdit}
-                              onSave={saveTask}
-                            />
-                          ) : (
-                            <Task
-                              id={task.id}
-                              title={task.title}
-                              description={task.description}
-                              date={task.date}
-                              time={task.time}
-                              completed={task.completed}
-                              important={task.important}
-                              onEdit={showEdit}
-                            />
-                          )}
-                        </div>
-                      )}
+                      {(provided) => renderTask(task, provided)}
                     </Draggable>
                   ))}
                   {provided.placeholder}
@@ -197,9 +190,8 @@ export default function TodoList() {
               description={newTask.description}
               date={newTask.date}
               time={newTask.time}
-              priority={tasks.length + 1}
               onSave={saveTask}
-              onCancel={cancelAddTask}
+              onCancel={closeEdits}
               addMode
             />
           )}

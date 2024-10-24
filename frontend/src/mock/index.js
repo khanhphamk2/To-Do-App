@@ -5,7 +5,7 @@ export const TASKS = [
     description: 'Add a task and press return to add it to the list',
     date: "2024-10-20",
     time: '18:45',
-    important: true,
+    important: false,
     completed: true,
     editMode: false,
   },
