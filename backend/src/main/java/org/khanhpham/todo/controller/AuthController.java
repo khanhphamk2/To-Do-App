@@ -19,12 +19,18 @@ public class AuthController {
 
     @PostMapping(value = {"/login", "/sign-in"})
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest loginRequest){
+        System.out.println("Login request: " + loginRequest);
         return ResponseEntity.ok(authService.loginWithIdentityAndPassword(loginRequest));
     }
 
     @PostMapping(value = {"/register", "/signup"})
     public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest registerRequest){
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(registerRequest));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<AuthResponse> refreshTokens(@RequestBody RefreshTokenRequest request){
+        return ResponseEntity.ok(authService.refreshTokens(request));
     }
 
     @PostMapping("/google")

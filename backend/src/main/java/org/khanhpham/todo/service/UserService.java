@@ -8,4 +8,5 @@ public interface UserService {
     UserDTO findById(Long id);
     User createUser(String email, String username);
     UserDTO findByUsernameOrEmail(String email, String username);
+    void changePassword(String username, String password);
 }

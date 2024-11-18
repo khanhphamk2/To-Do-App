@@ -94,8 +94,6 @@ public class DataSeeder implements CommandLineRunner {
         user.setEmail(generateUniqueEmail());
         user.setUsername(generateUniqueUsername());
         user.setPassword(sharedPassword);
-        user.setResetPasswordToken(null);
-        user.setResetPasswordTokenExpiredDate(LocalDateTime.now().plusDays(30));
         return user;
     }
 

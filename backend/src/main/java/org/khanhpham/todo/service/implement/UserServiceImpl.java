@@ -103,4 +103,11 @@ public class UserServiceImpl implements UserService {
         Optional<User> user = userRepository.findByUsernameOrEmail(username, email);
         return user.map(this::convertToDTO).orElse(null);
     }
+
+    @Override
+    public void changePassword(String username, String password) {
+        User user = userRepository.findByUsername(username);
+        user.setPassword(password);
+        convertToDTO(userRepository.save(user));
+    }
 }

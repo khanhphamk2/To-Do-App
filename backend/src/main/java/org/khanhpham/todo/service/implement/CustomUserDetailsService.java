@@ -4,6 +4,7 @@ import org.khanhpham.todo.entity.User;
 import org.khanhpham.todo.repository.UserRepository;
 import org.khanhpham.todo.entity.CustomUserDetails;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -26,7 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User not found with username or email: "+ usernameOrEmail));
 
-        Set<GrantedAuthority> authorities = Collections.emptySet();
+        Set<GrantedAuthority> authorities = Collections.singleton(new SimpleGrantedAuthority("ROLE_USER"));
 
         return new CustomUserDetails(user.getId(), user.getUsername(), user.getPassword(), authorities);
     }

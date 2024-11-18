@@ -1,16 +1,15 @@
 package org.khanhpham.todo.payload.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.khanhpham.todo.payload.dto.UserDTO;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Data
 public class AuthResponse {
     private UserDTO user;
-    private String token;
+    private String accessToken;
+    private String refreshToken;
 }

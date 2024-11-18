@@ -6,8 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -24,8 +22,6 @@ public class User {
     private String password;
     @Column(nullable = false)
     private String username;
-    @Column(name = "reset_password_token")
-    private String resetPasswordToken;
-    @Column(name = "reset_password_token_expired_date")
-    private LocalDateTime resetPasswordTokenExpiredDate;
+    @Column(nullable = false)
+    private String role = "ROLE_USER";
 }

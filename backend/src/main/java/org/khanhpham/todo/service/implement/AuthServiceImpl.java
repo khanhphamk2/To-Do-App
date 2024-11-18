@@ -1,17 +1,17 @@
 package org.khanhpham.todo.service.implement;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.khanhpham.todo.common.TokenType;
 import org.khanhpham.todo.entity.User;
 import org.khanhpham.todo.exception.CustomException;
+import org.khanhpham.todo.payload.dto.TokenDTO;
 import org.khanhpham.todo.payload.dto.UserDTO;
 import org.khanhpham.todo.payload.request.*;
 import org.khanhpham.todo.payload.response.AuthResponse;
 import org.khanhpham.todo.payload.response.UserInfoResponse;
 import org.khanhpham.todo.repository.UserRepository;
 import org.khanhpham.todo.security.JwtTokenProvider;
-import org.khanhpham.todo.service.AuthService;
-import org.khanhpham.todo.service.EmailService;
-import org.khanhpham.todo.service.UserService;
+import org.khanhpham.todo.service.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -21,11 +21,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -33,11 +33,11 @@ import java.util.*;
  * AuthServiceImpl implements the AuthService interface and provides authentication services,
  * including user login with identity and password, registration, login with Google OAuth,
  * and password reset functionalities.
- *
+ * *
  * It integrates with Spring Security for authentication management and uses JWT (Json Web Token)
  * for securing endpoints. It also communicates with the user repository to manage user data and
  * sends email notifications via the EmailService.
- *
+ * *
  * Dependencies injected include:
  * - AuthenticationManager: For authenticating users during login.
  * - UserRepository: For accessing and persisting user data.
@@ -46,7 +46,7 @@ import java.util.*;
  * - UserService: For user-related operations, such as fetching or creating users.
  * - EmailService: For sending emails during password reset operations.
  * - ModelMapper: For mapping between entity objects and DTOs.
- *
+ * *
  * The class includes methods to:
  * - Authenticate users with a username or email and password.
  * - Register new users and ensure valid password formatting.
@@ -70,16 +70,23 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserService userService;
+    private final TokenService tokenService;
     private final EmailService emailService;
+    private final UserDetailsService userDetailsService;
     private final ModelMapper modelMapper;
 
-    public AuthServiceImpl(AuthenticationManager authenticationManager, UserRepository userRepository, PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider, UserService userService, EmailService emailService, ModelMapper modelMapper) {
+    public AuthServiceImpl(AuthenticationManager authenticationManager, UserRepository userRepository,
+                           PasswordEncoder passwordEncoder, JwtTokenProvider jwtTokenProvider,
+                           UserService userService, TokenService tokenService, EmailService emailService,
+                            UserDetailsService userDetailsService, ModelMapper modelMapper) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.userService = userService;
+        this.tokenService = tokenService;
         this.emailService = emailService;
+        this.userDetailsService = userDetailsService;
         this.modelMapper = modelMapper;
     }
 
@@ -87,7 +94,7 @@ public class AuthServiceImpl implements AuthService {
      * Logs in the user using their identity (username or email) and password.
      *
      * @param loginRequest Contains the identity (username or email) and password for authentication.
-     * @return AuthResponse containing the JWT token and user information if authentication is successful.
+     * @return AuthResponse containing the JWT tokenValue and user information if authentication is successful.
      * @throws CustomException if the username or password is incorrect.
      */
     @Override
@@ -97,8 +104,21 @@ public class AuthServiceImpl implements AuthService {
         UserDTO user = userService.findByUsernameOrEmail(identity, identity);
 
         if (user == null) {
-            throw new CustomException(HttpStatus.UNAUTHORIZED, "Username or password is incorrect!.");
+            throw new CustomException(HttpStatus.UNAUTHORIZED, "Username or password is incorrect!");
         }
+
+        TokenDTO oldRefreshToken = tokenService.getTokenByUserId(user.getId(), TokenType.REFRESH);
+        if (oldRefreshToken != null) {
+            tokenService.deleteToken(oldRefreshToken.getId());
+        }
+
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
+        TokenRequest tokenRequest = new TokenRequest(
+                    newRefreshToken,
+                    TokenType.REFRESH,
+                    LocalDateTime.now().plusDays(14)
+        );
+        TokenDTO refreshToken = tokenService.createToken(user.getId(), tokenRequest);
 
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                 identity, loginRequest.getPassword()));
@@ -106,8 +126,9 @@ public class AuthServiceImpl implements AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         AuthResponse authResponse = new AuthResponse();
-        authResponse.setToken(jwtTokenProvider.generateToken(authentication));
+        authResponse.setAccessToken(jwtTokenProvider.generateAccessToken(authentication));
         authResponse.setUser(user);
+        authResponse.setRefreshToken(refreshToken.getTokenValue());
 
         return authResponse;
     }
@@ -117,7 +138,7 @@ public class AuthServiceImpl implements AuthService {
      * and then saving the user in the database.
      *
      * @param registerRequest Contains registration data such as username, email, and password.
-     * @return AuthResponse with a JWT token and user details after successful registration.
+     * @return AuthResponse with a JWT tokenValue and user details after successful registration.
      * @throws CustomException if the username or email already exists or the password is invalid.
      */
     @Override
@@ -146,14 +167,56 @@ public class AuthServiceImpl implements AuthService {
         return loginWithIdentityAndPassword(new LoginRequest(registerRequest.getUsername(), registerRequest.getPassword()));
     }
 
+    @Override
+    public AuthResponse refreshTokens(RefreshTokenRequest refreshTokenRequest) {
+        String refreshToken = refreshTokenRequest.getRefreshToken();
+
+        if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
+            throw new CustomException(HttpStatus.UNAUTHORIZED, "Invalid or expired refresh tokenValue.");
+        }
+
+        // Extract identity from refresh tokenValue
+        String identity = jwtTokenProvider.getIdentityFromRefreshToken(refreshToken);
+
+        UserDTO user = userService.findByUsernameOrEmail(identity, identity);
+        if (user == null) {
+            throw new CustomException(HttpStatus.UNAUTHORIZED, "User not found.");
+        }
+
+        // Retrieve old refresh tokenValue
+        TokenDTO oldRefreshToken = tokenService.getTokenByTokenValue(refreshToken);
+
+        // Load user details and set authentication
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String newAccessToken = jwtTokenProvider.generateAccessToken(authentication);
+        String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getUsername());
+
+        TokenRequest tokenRequest = new TokenRequest(newRefreshToken, TokenType.REFRESH, LocalDateTime.now().plusDays(30));
+        TokenDTO refreshTokenDTO = tokenService.updateToken(oldRefreshToken.getId(), tokenRequest);
+
+        AuthResponse authResponse = new AuthResponse();
+        authResponse.setAccessToken(newAccessToken);
+        authResponse.setUser(user);
+        authResponse.setRefreshToken(refreshTokenDTO.getTokenValue());
+
+        return authResponse;
+    }
+
     /**
-     * Logs in a user with their Google OAuth access token by fetching their profile data
+     * Logs in a user with their Google OAuth access tokenValue by fetching their profile data
      * from the Google API and verifying if they are already registered in the system.
      *
      * @param request The HttpServletRequest containing request details.
-     * @param loginGoogleRequest Contains the Google OAuth access token.
-     * @return AuthResponse containing the JWT token and user details.
-     * @throws CustomException if user info cannot be retrieved or token is invalid.
+     * @param loginGoogleRequest Contains the Google OAuth access tokenValue.
+     * @return AuthResponse containing the JWT tokenValue and user details.
+     * @throws CustomException if user info cannot be retrieved or tokenValue is invalid.
      */
     @Override
     public AuthResponse loginWithGoogle(HttpServletRequest request, LoginGoogleRequest loginGoogleRequest) {
@@ -191,14 +254,14 @@ public class AuthServiceImpl implements AuthService {
 
         AuthResponse authResponse = new AuthResponse();
         authResponse.setUser(convertToDTO(user));
-        authResponse.setToken(jwtTokenProvider.generateToken(authentication));
+        authResponse.setAccessToken(jwtTokenProvider.generateAccessToken(authentication));
 
         return authResponse;
     }
 
 
     /**
-     * Initiates the password reset process by generating a reset token, saving it to the user,
+     * Initiates the password reset process by generating a reset tokenValue, saving it to the user,
      * and sending a reset link via email.
      *
      * @param forgotPasswordRequest Contains the email address of the user requesting the password reset.
@@ -213,75 +276,58 @@ public class AuthServiceImpl implements AuthService {
                 throw new CustomException(HttpStatus.BAD_REQUEST, "Email is not exists!.");
             }
 
-            // Generate token
-            String token = generateToken();
+            // Generate tokenValue
+            String token = tokenService.generateToken();
 
             // Set expired date 15 minutes
             LocalDateTime expiredDate = LocalDateTime.now().plusMinutes(15);
 
-            // Save token to database
-            user.setResetPasswordToken(token);
-            user.setResetPasswordTokenExpiredDate(expiredDate);
+            TokenRequest tokenRequest = new TokenRequest(token, TokenType.RESET_PASSWORD, expiredDate);
+            TokenDTO resetToken = tokenService.createToken(user.getId(), tokenRequest);
 
             // Send email
             String subject = "Reset password";
             // front end url
             String content = "Please click the link below to reset your password: \n"
-                    + frontEndUrl + "/reset-password/" + "?token=" + token;
+                    + frontEndUrl + "/reset-password/" + "?tokenValue=" + resetToken.getTokenValue();
             emailService.sendEmail(email, subject, content);
-
-            userRepository.save(user);
-
         } catch (Exception e) {
             throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
     /**
-     * Resets the user's password using a token provided by the password reset email.
+     * Resets the user's password using a tokenValue provided by the password reset email.
      *
-     * @param resetPasswordToken The reset password token sent via email.
+     * @param resetPasswordToken The reset password tokenValue sent via email.
      * @param resetPasswordRequest Contains the new password for the user.
-     * @throws CustomException if the token is invalid, expired, or any other error occurs during reset.
+     * @throws CustomException if the tokenValue is invalid, expired, or any other error occurs during reset.
      */
     @Override
     public void resetPassword(String resetPasswordToken, ResetPasswordRequest resetPasswordRequest) {
         try {
             String password = resetPasswordRequest.getPassword();
 
-            User user = userRepository.findUserByResetPasswordToken(resetPasswordToken);
+            TokenDTO resetToken = tokenService.getTokenByTokenValue(resetPasswordToken);
 
-            if (user == null) {
+            UserDTO userDTO = userService.findById(resetToken.getUserId());
+
+            if (userDTO == null) {
                 throw new CustomException(HttpStatus.BAD_REQUEST, "Token is invalid!.");
             }
-
-            LocalDateTime expiredDate = user.getResetPasswordTokenExpiredDate();
+            LocalDateTime expiredDate = resetToken.getExpires();
 
             if (LocalDateTime.now().isAfter(expiredDate)) {
                 throw new CustomException(HttpStatus.BAD_REQUEST, "Token is expired!.");
             }
-
-            user.setPassword(passwordEncoder.encode(password));
-            user.setResetPasswordToken(null);
-
-            userRepository.save(user);
+            userService.changePassword(userDTO.getUsername(), password);
+            tokenService.deleteToken(resetToken.getId());
 
         } catch (Exception e) {
             throw new CustomException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
         }
     }
 
-    /**
-     * Generates a secure token used for password resets.
-     *
-     * @return A secure random token encoded in URL-safe Base64 format.
-     */
-    private String generateToken() {
-        SecureRandom random = new SecureRandom();
-        byte[] tokenBytes = new byte[32];
-        random.nextBytes(tokenBytes);
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
-    }
 
     /**
      * Builds UserDetails for Spring Security from the user entity.
@@ -339,7 +385,7 @@ public class AuthServiceImpl implements AuthService {
      * @return true if the password matches the validation criteria; false otherwise.
      */
     private boolean isPasswordValid(String password) {
-        String passwordRegex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]).{8,}$";
+        String passwordRegex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>/?]).{8,}$";
         return password.matches(passwordRegex);
     }
 
