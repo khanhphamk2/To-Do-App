@@ -3,6 +3,7 @@ package org.khanhpham.todo.controller;
 import jakarta.validation.Valid;
 import org.khanhpham.todo.entity.CustomUserDetails;
 import org.khanhpham.todo.payload.dto.TaskDTO;
+import org.khanhpham.todo.payload.request.ChangeTaskStatusRequest;
 import org.khanhpham.todo.payload.request.TaskRequest;
 import org.khanhpham.todo.service.TaskService;
 import org.springframework.http.ResponseEntity;
@@ -26,22 +27,13 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getTasksByUserId(userId));
     }
 
-    @GetMapping(params = "Completed")
-    public ResponseEntity<List<TaskDTO>> getTasksByCompletionStatus(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(value = "isCompleted") boolean isCompleted) {
+    @GetMapping("/filter")
+    public ResponseEntity<List<TaskDTO>> getTasksByFilter(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                                          @RequestParam(value = "filterField") String filterField,
+                                                          @RequestParam(value = "filterValue") boolean filterValue) {
         Long userId = userDetails.getUserId();
-        return ResponseEntity.ok(taskService.getTasksByCompletionStatus(userId, isCompleted));
+        return ResponseEntity.ok(taskService.getTasksByFilter(userId, filterField, filterValue));
     }
-
-    @GetMapping(params = "Important")
-    public ResponseEntity<List<TaskDTO>> getTasksByImportance(
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(value = "isImportant") boolean isImportant) {
-        Long userId = userDetails.getUserId();
-        return ResponseEntity.ok(taskService.getTasksByImportance(userId, isImportant));
-    }
-
 
     @PostMapping()
     public ResponseEntity<TaskDTO> createTask(@AuthenticationPrincipal CustomUserDetails userDetails,
@@ -70,17 +62,11 @@ public class TaskController {
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/{id}/complete")
-    public ResponseEntity<TaskDTO> completeTask(
+    @PutMapping("/{id}/status")
+    public ResponseEntity<TaskDTO>  updateTaskStatus(
             @PathVariable(value = "id") Long id,
-            @RequestBody boolean isCompleted) {
-        return ResponseEntity.ok(taskService.updateTaskCompletionStatus(id, isCompleted));
-    }
-
-    @PutMapping("/{id}/important")
-    public ResponseEntity<TaskDTO> markTaskAsImportant(
-            @PathVariable(value = "id") Long id,
-            @RequestBody boolean isImportant) {
-        return ResponseEntity.ok(taskService.updateTaskImportance(id, isImportant));
+            @RequestParam("field") String field,
+            @RequestBody ChangeTaskStatusRequest request) {
+        return ResponseEntity.ok(taskService.updateTaskStatus(id, field, request));
     }
 }

@@ -2,16 +2,19 @@ package org.khanhpham.todo.service.implement;
 
 import org.khanhpham.todo.entity.Task;
 import org.khanhpham.todo.payload.dto.TaskDTO;
+import org.khanhpham.todo.payload.request.ChangeTaskStatusRequest;
 import org.khanhpham.todo.payload.request.TaskRequest;
 import org.khanhpham.todo.repository.TaskRepository;
 import org.khanhpham.todo.repository.UserRepository;
 import org.khanhpham.todo.service.TaskService;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Implementation of the TaskService interface that handles task-related operations.
@@ -126,7 +129,11 @@ public class TaskServiceImpl implements TaskService {
      */
     @Override
     public TaskDTO getTaskByUserIdAndTaskId(Long userId, Long id) {
-        return convertToDto(taskRepository.findByUserIdAndId(userId, id));
+        Task task = findTaskById(id);
+        if (!Objects.equals(task.getUser().getId(), userId)) {
+            throw new AccessDeniedException("You do not have permission to access this task");
+        }
+        return convertToDto(task);
     }
 
     /**
@@ -156,38 +163,38 @@ public class TaskServiceImpl implements TaskService {
         taskRepository.delete(task);
     }
 
-    /**
-     * Updates the completion status of a task.
-     *
-     * @param id          the ID of the task to update
-     * @param isCompleted true if the task is completed, false if incomplete
-     * @return the updated TaskDTO
-     */
-    @Override
-    public TaskDTO updateTaskCompletionStatus(Long id, boolean isCompleted) {
-        Task task = findTaskById(id);
-        task.setCompleted(isCompleted);
-        return convertToDto(taskRepository.save(task));
-    }
-
-    /**
-     * Updates the importance status of a task.
-     *
-     * @param id         the ID of the task to update
-     * @param isImportant true if the task is important, false if unimportant
-     * @return the updated TaskDTO
-     */
-    @Override
-    public TaskDTO updateTaskImportance(Long id, boolean isImportant) {
-        Task task = findTaskById(id);
-        task.setImportant(isImportant);
-        return convertToDto(taskRepository.save(task));
-    }
-
     @Override
     public List<TaskDTO> getTasksByImportance(Long userId, boolean isImportant) {
         return taskRepository.findByUserIdAndIsImportant(userId, isImportant)
                 .stream()
+                .map(this::convertToDto)
+                .toList();
+    }
+
+    @Override
+    public TaskDTO updateTaskStatus(Long id, String property, ChangeTaskStatusRequest request) {
+        Task task = findTaskById(id);
+        switch (property) {
+            case "completed":
+                task.setCompleted(request.isValue());
+                break;
+            case "important":
+                task.setImportant(request.isValue());
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid task property: " + property);
+        }
+        return convertToDto(taskRepository.save(task));
+    }
+
+    @Override
+    public List<TaskDTO> getTasksByFilter(Long userId, String filterField, boolean filterValue) {
+        List<Task> tasks = switch (filterField) {
+            case "completed" -> taskRepository.findByUserIdAndIsCompleted(userId, filterValue);
+            case "important" -> taskRepository.findByUserIdAndIsImportant(userId, filterValue);
+            default -> throw new IllegalArgumentException("Invalid filter field: " + filterField);
+        };
+        return tasks.stream()
                 .map(this::convertToDto)
                 .toList();
     }
