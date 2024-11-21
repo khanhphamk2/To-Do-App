@@ -1,13 +1,9 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import RoundCheckbox from "../../controls/checkbox/RoundCheckbox";
 import StarCheckbox from "../../controls/checkbox/StarCheckbox";
 import "./style/Task.css";
-import { timeDiffFromNow } from "../../../utils/formatting";
-import {
-  changeTaskCompleted,
-  changeTaskImportant,
-} from "../../../api/task.api";
+import formatTime, { timeDiffFromNow } from "../../../utils/formatTime";
 
 export default function Task({
   id,
@@ -30,7 +26,6 @@ export default function Task({
   const handleToggleComplete = useCallback(
     (id) => {
       onToggleComplete(id);
-      changeTaskCompleted(id);
     },
     [onToggleComplete]
   );
@@ -38,7 +33,6 @@ export default function Task({
   const handleToggleImportant = useCallback(
     (id) => {
       onToggleImportant(id);
-      changeTaskImportant(id);
     },
     [onToggleImportant]
   );
@@ -80,7 +74,7 @@ export default function Task({
         </div>
         <div className="shrink-0">
           <p className="text-neutral-500 text-sm font-normal leading-normal">
-            {time}
+            {formatTime(time)}
           </p>
         </div>
       </div>
@@ -91,7 +85,11 @@ export default function Task({
             enabled={important}
           />
         </div>
-        <div className="cursor-pointer" onClick={() => onEdit(id)}>
+        <button
+          className="cursor-pointer"
+          onClick={() => onEdit(id)}
+          aria-label="Edit task"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
@@ -106,7 +104,7 @@ export default function Task({
               d="M12 6.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 12.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5ZM12 18.75a.75.75 0 1 1 0-1.5.75.75 0 0 1 0 1.5Z"
             />
           </svg>
-        </div>
+        </button>
       </div>
       {taskAlert() && (
         <div className="task-warning relative">

@@ -100,8 +100,7 @@ export default function Header() {
             Tasks
           </a>
           <a
-            // href="/My-Day"
-            href="#"
+            href="/my-day"
             className="flex items-center gap-1 text-sm font-semibold leading-6 text-gray-900"
           >
             <SunIcon className="h-5 w-5 text-gray-900" />

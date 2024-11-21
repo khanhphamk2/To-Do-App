@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import TimePicker from "../../controls/picker/TimePicker";
 import { MdDeleteForever, MdOutlineUpdate } from "react-icons/md";
@@ -14,6 +14,7 @@ export default function TaskEdit({
   onSave,
   onCancel,
   onRemove,
+  onUpdate,
   addMode,
 }) {
   const [editTitle, setEditTitle] = useState(title);
@@ -30,9 +31,23 @@ export default function TaskEdit({
     });
   };
 
-  useEffect(() => {
-    console.log("date: ", editDate);
-  }, [editDate]);
+  const handleUpdate = () => {
+    onUpdate({
+      id: id,
+      title: editTitle,
+      description: editDescription,
+      time: editTime,
+      date: editDate,
+    });
+  };
+
+  const handleClick = () => {
+    if (addMode) {
+      handleSave();
+    } else {
+      handleUpdate();
+    }
+  };
 
   return (
     <div className="bg-[#FFFFFF] p-4 rounded-xl shadow-lg">
@@ -84,7 +99,7 @@ export default function TaskEdit({
           </button>
         )}
         <button
-          onClick={handleSave}
+          onClick={handleClick}
           className="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-xl flex items-center"
         >
           <MdOutlineUpdate className="size-6 mr-1" />
@@ -104,5 +119,6 @@ TaskEdit.propTypes = {
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
   onRemove: PropTypes.func.isRequired,
+  onUpdate: PropTypes.func.isRequired,
   addMode: PropTypes.bool.isRequired,
 };

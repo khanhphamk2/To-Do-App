@@ -1,34 +1,42 @@
 import { useState, useEffect } from "react";
 import Task from "../task/Task";
 import TaskEdit from "../task/TaskEdit";
-import { TASKS } from "../../../mock/index";
 import { DragDropContext, Draggable, Droppable } from "react-beautiful-dnd";
 import { PlusIcon } from "@heroicons/react/24/outline";
-import { getAllTask, createTask } from "../../../api/task.api";
-import { useAuth } from "../../../context/AuthProvider.js";
-import formatDate from "../../../utils/formatDate.js";
+import {
+  getAllTask,
+  createTask,
+  deleteTask,
+  updateTask,
+  changeTaskCompleted,
+  changeTaskImportant,
+} from "../../../api/task.api";
 
 export default function TodoList() {
   const [tasks, setTasks] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newTask, setNewTask] = useState(null);
-  const auth = useAuth();
 
-  // Fetch tasks from the server or mock data
   useEffect(() => {
-    if (localStorage.getItem("tasks")) {
-      localStorage.setItem("tasks", JSON.stringify(TASKS));
-      setTasks(JSON.parse(localStorage.getItem("tasks")));
-    } else {
-      setTasks(TASKS);
-    }
-  }, [auth]);
+    getData();
+  }, []);
+
+  const getData = async () => {
+    getAllTask()
+      .then((tasks) => setTasks(tasks))
+      .catch((error) => {
+        console.error("Error fetching tasks:", error);
+        setTasks();
+      });
+  };
 
   const showEdit = (id) => {
     checkOtherShowEdit();
     const task = tasks.find((task) => task.id === id);
-    task.editMode = true;
-    setTasks([...tasks]);
+    if (task) {
+      task.editMode = true;
+      setTasks([...tasks]);
+    }
   };
 
   const checkOtherShowEdit = () => {
@@ -58,20 +66,22 @@ export default function TodoList() {
   };
 
   const saveTask = (taskData) => {
-    const taskToAdd = {
-      ...newTask,
-      ...taskData,
-      date: formatDate(newTask.date),
-      editMode: false,
+    const taskToAdd = { ...newTask, ...taskData, editMode: false };
+
+    const data = {
+      title: taskToAdd.title,
+      description: taskToAdd.description,
+      date: taskToAdd.date,
+      time: taskToAdd.time,
     };
-    setTasks((prevTasks) => [...prevTasks, taskToAdd]);
-    TASKS.push(taskToAdd);
-    localStorage.setItem("tasks", JSON.stringify(TASKS));
-    createTask(taskToAdd).catch((error) =>
-      console.error("Error creating task:", error)
-    );
-    setIsAdding(false);
-    setNewTask(null);
+
+    createTask(data)
+      .then(() => {
+        setTasks((prevTasks) => [...prevTasks, taskToAdd]);
+        setIsAdding(false);
+        setNewTask(null);
+      })
+      .catch((error) => console.error("Error creating task:", error));
   };
 
   const closeEdits = () => {
@@ -81,14 +91,69 @@ export default function TodoList() {
     setIsAdding(false);
   };
 
-  const deleteTask = (id) => {
+  const handleDeleteTask = (id) => {
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
   };
 
-  const toggleTaskField = (id, field) => {
+  const removeTask = (id) => {
+    deleteTask(id)
+      .then(() => handleDeleteTask(id))
+      .catch((error) => console.error("Error deleting task:", error));
+
+    handleDeleteTask();
+  };
+
+  const updateTaskData = (data) => {
+    const updatedData = {
+      title: data.title,
+      description: data.description,
+      date: data.date,
+      time: data.time,
+    };
+
+    updateTask(data.id, updatedData)
+      .then(() => console.log("Task updated!"))
+      .catch((error) => console.error("Error updating task:", error));
+  };
+
+  // const toggleTaskField = (id, field) => {
+  //   setTasks((prevTasks) =>
+  //     prevTasks.map((task) =>
+  //       task.id === id ? { ...task, [field]: !task[field] } : task
+  //     )
+  //   );
+  // };
+
+  const toggleTaskComplete = (id, isCompleted) => {
+    // Optimistically update the task list in the state before making the API call
+    updateTaskState(id, { isCompleted: !isCompleted });
+
+    // Make the API call to update the task status
+    changeTaskCompleted(id, { value: !isCompleted })
+      .then(() => getAllTask())
+      .catch((error) => {
+        console.error("Error toggling task completion:", error);
+
+        // If there is an error, revert the change to the completion status
+        updateTaskState(id, { isCompleted });
+      });
+  };
+
+  const toggleTaskImportant = (id, isImportant) => {
+    changeTaskImportant(id, { value: !isImportant })
+      .then(() => {
+        getAllTask();
+        updateTaskState(id, { isImportant: !isImportant });
+      })
+      .catch((error) =>
+        console.error("Error toggling task importance:", error)
+      );
+  };
+
+  const updateTaskState = (id, updatedFields) => {
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
-        task.id === id ? { ...task, [field]: !task[field] } : task
+        task.id === id ? { ...task, ...updatedFields } : task
       )
     );
   };
@@ -117,7 +182,8 @@ export default function TodoList() {
           time={task.time}
           onCancel={closeEdits}
           onSave={saveTask}
-          onRemove={deleteTask}
+          onRemove={removeTask}
+          onUpdate={updateTaskData}
         />
       ) : (
         <Task
@@ -129,8 +195,8 @@ export default function TodoList() {
           completed={task.completed}
           important={task.important}
           onEdit={() => showEdit(task.id)}
-          onToggleComplete={() => toggleTaskField(task.id, "completed")}
-          onToggleImportant={() => toggleTaskField(task.id, "important")}
+          onToggleComplete={() => toggleTaskComplete(task.id, task.completed)}
+          onToggleImportant={() => toggleTaskImportant(task.id, task.important)}
         />
       )}
     </div>
@@ -192,6 +258,8 @@ export default function TodoList() {
               time={newTask.time}
               onSave={saveTask}
               onCancel={closeEdits}
+              onRemove={removeTask}
+              onUpdate={updateTaskData}
               addMode
             />
           )}

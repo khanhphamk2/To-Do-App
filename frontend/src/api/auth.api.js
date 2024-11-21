@@ -1,9 +1,9 @@
 import httpRequest from '../config/httpRequest';
+import { checkNullish } from '../utils/checkNullish';
 
 export const login = async (data) => {
     try {
         const response = await httpRequest.post('/auth/login', data);
-        console.log('response', response);
         return response;
     } catch (error) {
         console.error('Error logging in:', error.response || error.message);
@@ -20,3 +20,15 @@ export const register = async (data) => {
         throw error;
     }
 }
+
+export const postGetRefreshToken = () => {
+    try {
+        const response = httpRequest.post('/auth/refresh-tokens', {
+            refreshToken: checkNullish(sessionStorage.getItem('refreshToken')),
+        });
+        return response;
+    } catch (error) {
+        console.error('Error getting refresh token:', error);
+        throw error;
+    }
+};

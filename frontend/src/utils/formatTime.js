@@ -19,3 +19,11 @@ export const timeDiffFromNow = (timeString) => {
     diffHours,
   };
 };
+
+const formatTime = (timeString) => {
+  const [hours, minutes] = timeString.split(":");
+  const formattedTime = `${hours}:${minutes}`;
+  return formattedTime;
+};
+
+export default formatTime;

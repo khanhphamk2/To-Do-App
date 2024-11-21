@@ -13,7 +13,9 @@ export const AuthProvider = ({ children }) => {
     const login = useCallback(async (data) => {
         if (data) {
             localStorage.setItem("user", JSON.stringify(data.user));
-            sessionStorage.setItem("accessToken", data.token);
+            sessionStorage.setItem("accessToken", data.accessToken);
+            sessionStorage.setItem("refreshToken", data.refreshToken);
+            // sessionStorage.setItem("expiresIn", data.expiresIn);
         }
     }, []);
 
@@ -32,6 +34,10 @@ export const AuthProvider = ({ children }) => {
         return sessionStorage.getItem("accessToken") || '';
     }, []);
 
+    const getRefreshToken = useCallback(() => {
+        return sessionStorage.getItem("refreshToken") || '';
+    }, []);
+
     const isAuthenticated = useCallback(() => !!getAccessToken() && !!getUser(), [getAccessToken, getUser]);
 
     const contextValue = useMemo(() => ({
@@ -39,8 +45,9 @@ export const AuthProvider = ({ children }) => {
         logout,
         getUser,
         getAccessToken,
+        getRefreshToken,
         isAuthenticated
-    }), [login, logout, getUser, getAccessToken, isAuthenticated]);
+    }), [login, logout, getUser, getAccessToken, getRefreshToken, isAuthenticated]);
 
     return (
         <AuthContext.Provider value={contextValue}>

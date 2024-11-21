@@ -4,7 +4,7 @@ import { useAuth } from "../../../../context/AuthProvider";
 import { login } from "../../../../api/auth.api";
 
 export default function LoginForm() {
-  const [identity, setIdentity] = useState("madison66@info.me");
+  const [identity, setIdentity] = useState("skylarviper@design.design");
   const [password, setPassword] = useState("admin@123");
   const auth = useAuth();
   const navigate = useNavigate();
